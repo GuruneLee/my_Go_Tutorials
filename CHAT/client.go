@@ -11,7 +11,7 @@ type client struct {
 	conn     net.Conn
 	nick     string
 	room     *room
-	commands chan<- commandID
+	commands chan<- command
 }
 
 func (c *client) readInput() {
@@ -68,7 +68,7 @@ func (c *client) readInput() {
 }
 
 func (c *client) err(err error) {
-	c.conn.Write([]byte("ERR: " + error.Error() + "\n"))
+	c.conn.Write([]byte("ERR: " + err.Error() + "\n"))
 }
 
 func (c *client) msg(msg string) {

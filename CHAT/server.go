@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"strings"
 )
 
 type server struct {
@@ -65,11 +67,11 @@ func (s *server) join(c *client, args []string) {
 
 	r.members[c.conn.RemoteAddr()] = c
 
-	s.quitCurrentRooms(c)
+	s.quitCurrentRoom(c)
 
 	c.room = r
 
-	r.broadcast(c, fmt.Sprint("%s has joined the room", c.nick))
+	r.broadcast(c, fmt.Sprintf("%s has joined the room", c.nick))
 	c.msg(fmt.Sprintf("welcome to %s", r.name))
 
 }
@@ -79,7 +81,7 @@ func (s *server) listRooms(c *client, args []string) {
 		rooms = append(rooms, name)
 	}
 
-	c.mst(fmt.Sprintf("available rooms are: %s", strings.Join(rooms, ", ")))
+	c.msg(fmt.Sprintf("available rooms are: %s", strings.Join(rooms, ", ")))
 }
 func (s *server) msg(c *client, args []string) {
 	if c.room == nil {
@@ -100,7 +102,7 @@ func (s *server) quit(c *client, args []string) {
 
 func (s *server) quitCurrentRoom(c *client) {
 	if c.room != nil {
-		delete(c.room.members, c.coon.RemoteAddr())
-		c.rooms.broadcast(c, fmt.Sprint("%s has left the room", n.nick))
+		delete(c.room.members, c.conn.RemoteAddr())
+		c.room.broadcast(c, fmt.Sprintf("%s has left the room", c.nick))
 	}
 }
