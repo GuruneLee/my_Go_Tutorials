@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ws</title>
+    <link rel='stylesheet' href='/stylesheets/style.css'/>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+</head>
+<body>
+<textarea rows="20" cols="30" id="chat"></textarea><br>
+<input type="text" id="user"><input type="button" value="msg submit" onclick="myOnClick()">
+</body>
+<script>
+    var ws = new WebSocket('{{.}}');
+    ws.onopen = (event) => {
+        let sendData = {event: 'open'}
+        ws.send(JSON.stringify(sendData));
+    }
+    ws.onmessage = (event) => {
+        console.log(event.data);
+        let recData = JSON.parse(event.data);
+        switch (recData.event) {
+            case 'res':
+                $('#chat').val($('#chat').val() + recData.data.comment + '\n');
+                break;
+            default:
+        }
+    }
+
+    function myOnClick() {
+        let sendData = {event: 'req', data: {comment: $('#user').val()}};
+        ws.send(JSON.stringify(sendData));
+        $('#user').val('');
+    }
+</script>
+</html>
