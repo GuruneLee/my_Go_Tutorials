@@ -55,7 +55,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	  : 안전한 HTML조각을 생성하는 text/template의 특별한 형태이다.
 	*/
 
-	path := filepath.Join("templates", "index.html")
+	path := filepath.Join("index.html")
 	// func Join(elem ...string) string
 	// : 파라미터들을 각 OS의 구분자를 끼워넣어 연결해준
 	tmpl := template.Must(template.ParseFiles(path))
@@ -80,5 +80,5 @@ func main() {
 		serveWs(s, w, r)
 	})
 	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+	log.Fatal(http.ListenAndServe("localhost:8090", nil))
 }
