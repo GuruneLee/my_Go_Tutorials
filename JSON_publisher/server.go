@@ -1,42 +1,34 @@
 package main
 
-import (
-	"log"
-
-	"github.com/gorilla/websocket"
-)
-
 type server struct {
-	clients []client
-	inputs  chan map[string]interface{}
+	clients   map[*Client]bool
+	broadcast chan []byte
+	register  chan *Client
 }
 
 func newServer() *server {
 	return &server{
-		clients: make([]client, 10),
-		inputs:  make(chan map[string]interface{}),
+		broadcast: make(chan []byte),
+		register:  make(chan *Client),
+		clients:   make(map[*Client]bool),
 	}
 }
 
-func (s *server) newClient(conn websocket.Conn) {
-	log.Printf("new client has connected: %s", conn.RemoteAddr().String())
+func (s *server) run() {
+	for {
+		select {
+		case client := <-s.register:
+			s.clients[client] = true
 
-	c := &client{
-		conn:  conn,
-		input: s.inputs,
-	}
-
-	s.clients = append(s.clients, *c)
-
-	c.readInput()
-}
-
-/*
-func (s *server) broadcast() {
-	for msg := range s.inputs {
-		for c := range s.clients {
-			fmt.Println(reflect.TypeOf(c))
+		case msg := <-s.broadcast:
+			for client := range s.clients {
+				select {
+				case client.send <- msg:
+				default:
+					close(client.send)
+					delete(s.clients, client)
+				}
+			}
 		}
 	}
 }
-*/
