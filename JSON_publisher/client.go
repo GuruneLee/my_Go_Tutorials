@@ -59,6 +59,7 @@ func (c *Client) readPump() {
 		var objmap map[string]interface{}
 		_ = json.Unmarshal(message, &objmap)
 		event := objmap["event"].(string)
+
 		sendData := map[string]interface{}{
 			"event": "res",
 			"data":  nil,

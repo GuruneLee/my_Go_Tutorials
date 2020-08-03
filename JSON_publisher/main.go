@@ -7,48 +7,6 @@ import (
 	"path/filepath"
 )
 
-/*
-func echo(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-	defer c.Close()
-
-	for {
-		mt, message, err := c.ReadMessage()
-		// func (c *Conn) ReadMessage() (messageType int, p []byte, err error)
-		if err != nil {
-			log.Println("read:", err)
-			break
-		}
-
-		var objmap map[string]interface{}
-		_ = json.Unmarshal(message, &objmap)
-		event := objmap["event"].(string)
-		sendData := map[string]interface{}{
-			"event": "res",
-			"data":  nil,
-		}
-
-		switch event {
-		case "open":
-			log.Printf("Received: %s\n", event)
-		case "req":
-			sendData["data"] = objmap["data"]
-			log.Printf("Received: %s\n", event)
-		}
-
-		refineSendData, _ := json.Marshal(sendData)
-		err = c.WriteMessage(mt, refineSendData)
-		if err != nil {
-			log.Println("write:", err)
-			break
-		}
-	}
-}
-*/
 func home(w http.ResponseWriter, r *http.Request) {
 	/*
 	  type Template
@@ -80,5 +38,5 @@ func main() {
 		serveWs(s, w, r)
 	})
 	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe("localhost:8090", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
