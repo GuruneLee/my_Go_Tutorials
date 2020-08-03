@@ -30,7 +30,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
 	s := newServer()
 	go s.run()
 

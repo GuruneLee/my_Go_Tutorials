@@ -24,7 +24,7 @@ func (s *server) run() {
 			for client := range s.clients {
 				select {
 				case client.send <- msg:
-				default:
+				default: //client.send가 사용불가능 할때, 실행
 					close(client.send)
 					delete(s.clients, client)
 				}
