@@ -7,11 +7,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 const (
@@ -62,16 +62,20 @@ func (c *Client) readPump() {
 				log.Printf("error: %v", err)
 			}
 			break
+		} else {
+			fmt.Println("read some messages")
 		}
 
 		var rData JSON
 		json.Unmarshal(message, &rData)
 		recieveType := rData.Type
 
-		sendMe, sendOther := c.MakeSendData(rData, recieveType)
+		sendMe, _ := c.MakeSendData(rData, recieveType)
 
+		fmt.Println(sendMe)
+		//fmt.Println(sendOther)
 		c.server.broadcast <- sendMe
-		c.server.broadcast <- sendOther
+		//c.server.broadcast <- sendOther
 	}
 }
 
@@ -94,7 +98,10 @@ func (c *Client) writePump() {
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				log.Fatal(err)
 				return
+			} else {
+				fmt.Println("make next writer w")
 			}
 
 			// routing
@@ -102,8 +109,12 @@ func (c *Client) writePump() {
 			if c.rightMSG(message) {
 				refineSendData, _ = json.Marshal(message)
 			}
-			w.Write(refineSendData)
-
+			_, err = w.Write(refineSendData)
+			if err != nil {
+				log.Fatal(err)
+			} else {
+				fmt.Println("Message")
+			}
 			/*// Add queued chat messages to the current websocket message.
 			n := len(c.send)
 			for i := 0; i < n; i++ {
@@ -139,14 +150,16 @@ func (c *Client) rightMSG(msg JSON) bool {
 }
 
 func serveWs(hub *server, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("serveWs1")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	fmt.Println("serveWs2")
 	client := &Client{server: hub, conn: conn, id: "000000", send: make(chan JSON)}
 	client.server.register <- client
-
+	fmt.Println("serveWs3")
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
 	go client.writePump()
