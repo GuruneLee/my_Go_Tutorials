@@ -42,8 +42,8 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	server *server
 	conn   *websocket.Conn
-	id     int
-	send   chan map[string]interface{}
+	id     string //여섯자리 스트링
+	send   chan JSON
 }
 
 func (c *Client) readPump() {
@@ -64,53 +64,11 @@ func (c *Client) readPump() {
 			break
 		}
 
-		// 받아온 Json파일을 parsing
-		//
-		// {type: , data: {id: , expression: }}
-		// type은 open, close, exp
-		var objmap map[string]interface{}
-		_ = json.Unmarshal(message, &objmap)
-		recieveType := objmap["type"].(string)
+		var rData JSON
+		json.Unmarshal(message, &rData)
+		recieveType := rData.Type
 
-		// 보낼 데이터 정의하기
-		//
-		// sendMe -> 요청한놈
-		// sendOther -> 다른놈
-		// {conn:, type: , data: {id: , expression: }}
-		sendMe := map[string]interface{}{
-			// type: welcome, bye, exp
-			"conn": c,
-			"type": nil,
-			"data": objmap["data"],
-		}
-		sendOther := map[string]interface{}{
-			// type: enter, exit, exp
-			"conn": c,
-			"type": nil,
-			"data": objmap["data"],
-		}
-
-		// 받은 type따라 sendData 채우기
-		switch recieveType {
-		case "open":
-			log.Printf("Received: %s\n", recieveType)
-      sendMe["type"] = "welcome"
-      sendOther["type"] = "Enter"
-      sendMe["data"]["id"] =
-      sendOther["data"]["id"] =
-		case "close":
-			log.Printf("Received: %s\n", recieveType)
-      sendMe["type"] = "bye"
-      sendOther["type"] = "Exit"
-      sendMe["data"] =
-      sendOther["data"] =
-		case "exp":
-			log.Printf("Received: %s\n", recieveType)
-      sendMe["type"] = "exp"
-      sendOther["type"] = "exp"
-      sendMe["data"] = objmap["data"]
-      sendOther["data"] = objmap["data"]
-		}
+		sendMe, sendOther := c.MakeSendData(rData, recieveType)
 
 		c.server.broadcast <- sendMe
 		c.server.broadcast <- sendOther
@@ -142,15 +100,8 @@ func (c *Client) writePump() {
 			// routing
 			var refineSendData []byte
 			if c.rightMSG(message) {
-				//parsing
-				msg := map[string]interface{}{
-					"type": message["type"],
-					"data": message["data"],
-				}
-				//Marshal
-				refineSendData, _ = json.Marshal(msg)
+				refineSendData, _ = json.Marshal(message)
 			}
-
 			w.Write(refineSendData)
 
 			/*// Add queued chat messages to the current websocket message.
@@ -173,10 +124,10 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *Client) rightMSG(msg map[string]interface{}) bool {
+func (c *Client) rightMSG(msg JSON) bool {
 	ans := false
-	conn := msg["conn"]
-	t := msg["type"]
+	conn := msg.C
+	t := msg.Type
 	bar1 := (conn == c) && ((t == "welcome") || (t == "bye"))
 	bar2 := (conn != c) && ((t == "enter") || (t == "exit"))
 
@@ -193,7 +144,7 @@ func serveWs(hub *server, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{server: hub, conn: conn, id: -1, send: make(chan map[string]interface{})}
+	client := &Client{server: hub, conn: conn, id: "000000", send: make(chan JSON)}
 	client.server.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

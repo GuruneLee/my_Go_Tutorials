@@ -5,21 +5,26 @@
 // func server.run
 package main
 
+import (
+	"math/rand"
+	"time"
+)
+
 type server struct {
 	clients     map[*Client]bool
-	identifiers map[int]*Client
-	broadcast   chan map[string]interface{}
+	identifiers map[string]*Client
+	broadcast   chan JSON
 	register    chan *Client
 	unregister  chan *Client
 }
 
 func newServer() *server {
 	return &server{
-		broadcast:   make(chan map[string]interface{}),
+		broadcast:   make(chan JSON),
 		register:    make(chan *Client),
 		unregister:  make(chan *Client),
 		clients:     make(map[*Client]bool),
-		identifiers: make(map[int]*Client),
+		identifiers: make(map[string]*Client),
 	}
 }
 
@@ -58,6 +63,33 @@ func (s *server) run() {
 	}
 }
 
-func (s *server) makeID() int {
-	return len(s.identifiers) + 1
+// makeId is Identifier Generator
+func (s *server) makeID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	b := make([]byte, 6)
+	for stop := false; !stop; {
+		for i := range b {
+			b[i] = charset[seededRand.Intn(len(charset))]
+		}
+		for _, v := range s.findIDs() {
+			if v == string(b) {
+				stop = true
+				break
+			}
+		}
+	}
+	return string(b)
+}
+
+// findIDs is generating ID array\
+// used in c.MakeSendData() and s.makeID()
+func (s *server) findIDs() []string {
+	var r []string
+	for k := range s.identifiers {
+		r = append(r, k)
+	}
+
+	return r
 }
