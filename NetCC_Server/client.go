@@ -70,11 +70,11 @@ func (c *Client) readPump() {
 		json.Unmarshal(message, &rData)
 		recieveType := rData.Type
 
-		sendMe, _ := c.MakeSendData(rData, recieveType)
+		sendData := c.MakeSendData(rData, recieveType)
 
-		fmt.Println(sendMe)
+		fmt.Println(sendData)
 		//fmt.Println(sendOther)
-		c.server.broadcast <- sendMe
+		c.server.broadcast <- sendData
 		//c.server.broadcast <- sendOther
 	}
 }
@@ -106,9 +106,12 @@ func (c *Client) writePump() {
 
 			// routing
 			var refineSendData []byte
-			if c.rightMSG(message) {
-				refineSendData, _ = json.Marshal(message)
-			}
+			refineSendData = c.refineMSG(message)
+			/*
+				if c.rightMSG(message) {
+					refineSendData, _ = json.Marshal(message)
+				}
+			*/
 			_, err = w.Write(refineSendData)
 			if err != nil {
 				log.Fatal(err)
@@ -135,16 +138,31 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *Client) rightMSG(msg JSON) bool {
-	ans := false
+func (c *Client) refineMSG(msg JSON) []byte {
 	conn := msg.C
 	t := msg.Type
-	bar1 := (conn == c) && ((t == "welcome") || (t == "bye"))
-	bar2 := (conn != c) && ((t == "enter") || (t == "exit"))
 
-	if (t == "exp") || bar1 || bar2 {
-		ans = true
+	var ans []byte
+
+	if t != "exp" {
+		switch msg.Type {
+		case "open":
+			if conn == c {
+				msg.Type = "welcome"
+			} else {
+				msg.Type = "enter"
+				msg.Data.IDs = nil
+			}
+		case "close":
+			if conn == c {
+				msg.Type = "bye"
+			} else {
+				msg.Type = "exit"
+			}
+		}
 	}
+
+	ans, _ = json.Marshal(msg)
 
 	return ans
 }
